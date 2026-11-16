@@ -144,13 +144,13 @@ func (c *Client) IssuesByNumber(ctx context.Context, teamKey string, numbers []i
 	return issues, nil
 }
 
-// MyIssues returns the viewer's open (not completed or canceled) issues in
+// MyIssues returns the viewer's open (not completed, canceled or duplicate) issues in
 // the given teams.
 func (c *Client) MyIssues(ctx context.Context, teamKeys []string) ([]AssignedIssue, error) {
 	// ponytail: first 250 without pagination; paginate if someone holds more open issues.
 	const query = `query($keys: [String!]) {
   viewer {
-    assignedIssues(first: 250, filter: { state: { type: { nin: ["completed", "canceled"] } }, team: { key: { in: $keys } } }) {
+    assignedIssues(first: 250, filter: { state: { type: { nin: ["completed", "canceled", "duplicate"] } }, team: { key: { in: $keys } } }) {
       nodes { identifier title url branchName priority state { id name type } team { key } }
     }
   }
