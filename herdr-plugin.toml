@@ -1,5 +1,5 @@
-id = "sungjunyoung.linear-title"
-name = "Linear Title"
+id = "sungjunyoung.linear"
+name = "Herdr Linear"
 version = "0.1.0"
 min_herdr_version = "0.9.3"
 description = "Rename worktree workspaces to '<ISSUE-ID> <Linear issue title>'"
@@ -10,37 +10,37 @@ command = ["nix", "--extra-experimental-features", "nix-command flakes", "develo
 
 [[events]]
 on = "worktree.created"
-command = ["./bin/herdr-linear-title", "hook"]
+command = ["./bin/herdr-linear", "hook"]
 
 [[events]]
 on = "worktree.opened"
-command = ["./bin/herdr-linear-title", "hook"]
+command = ["./bin/herdr-linear", "hook"]
 
 [[actions]]
 id = "refresh"
 title = "Linear: refresh workspace title"
 contexts = ["workspace"]
-command = ["./bin/herdr-linear-title", "refresh"]
+command = ["./bin/herdr-linear", "refresh"]
 
 [[actions]]
 id = "refresh-all"
 title = "Linear: refresh all worktree titles"
-command = ["./bin/herdr-linear-title", "refresh-all"]
+command = ["./bin/herdr-linear", "refresh-all"]
 
 [[actions]]
 id = "setup"
 title = "Linear: setup / login"
-command = ["./bin/herdr-linear-title", "open-setup"]
+command = ["./bin/herdr-linear", "open-setup"]
 
 [[actions]]
 id = "logout"
 title = "Linear: log out"
-command = ["./bin/herdr-linear-title", "logout"]
+command = ["./bin/herdr-linear", "logout"]
 
 [[panes]]
 id = "setup"
-title = "Linear Title Setup"
+title = "Herdr Linear Setup"
 placement = "popup"
 width = "80%"
 height = 24
-command = ["./bin/herdr-linear-title", "setup"]
+command = ["./bin/herdr-linear", "setup"]

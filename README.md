@@ -1,4 +1,4 @@
-# herdr linear title
+# herdr linear
 
 A [herdr](https://herdr.dev) plugin that renames worktree workspaces after the
 Linear issue in their branch name.
@@ -26,20 +26,20 @@ branch sungjunyoung/homeco-2291-login     →  workspace "HOMECO-2291 홈코데�
 ## Install
 
 ```sh
-herdr plugin install sungjunyoung/herdr-linear-title
+herdr plugin install sungjunyoung/herdr-linear
 ```
 
 Then open the setup popup. herdr has no menu for plugin actions, so run this
 from any pane inside herdr (or bind a key, see [Actions](#actions)):
 
 ```sh
-herdr plugin action invoke sungjunyoung.linear-title.setup
+herdr plugin action invoke sungjunyoung.linear.setup
 ```
 
 The action opens the popup pane directly, which you can also do yourself:
 
 ```sh
-herdr plugin pane open --plugin sungjunyoung.linear-title --entrypoint setup --focus
+herdr plugin pane open --plugin sungjunyoung.linear --entrypoint setup --focus
 ```
 
 A herdr TUI client must be attached. Without one the command still answers
@@ -52,7 +52,7 @@ The popup asks for:
 2. **Authentication**: OAuth (recommended) or a personal API key.
 
 Setup verifies the credentials and writes `config.toml` to the plugin config
-directory (`herdr plugin config-dir sungjunyoung.linear-title`).
+directory (`herdr plugin config-dir sungjunyoung.linear`).
 
 ### OAuth
 
@@ -61,7 +61,7 @@ OAuth applications → New*.
 
 | Field | Value |
 | --- | --- |
-| Name | anything without the word "Linear", e.g. `herdr-linear-title` |
+| Name | anything without the word "Linear", e.g. `herdr-retitle` |
 | Callback URLs | `http://localhost:53682/callback` |
 
 Only the **client ID** is needed; the plugin uses PKCE, so never enter the
@@ -82,10 +82,10 @@ access is enough) and choose "Personal API key" in setup.
 
 | Action | Effect |
 | --- | --- |
-| `sungjunyoung.linear-title.refresh` | Retitle the current workspace, overwriting its label |
-| `sungjunyoung.linear-title.refresh-all` | Retitle every open worktree workspace |
-| `sungjunyoung.linear-title.setup` | Open the setup / login popup |
-| `sungjunyoung.linear-title.logout` | Revoke and delete the OAuth token |
+| `sungjunyoung.linear.refresh` | Retitle the current workspace, overwriting its label |
+| `sungjunyoung.linear.refresh-all` | Retitle every open worktree workspace |
+| `sungjunyoung.linear.setup` | Open the setup / login popup |
+| `sungjunyoung.linear.logout` | Revoke and delete the OAuth token |
 
 herdr runs plugin actions only through keybindings or
 `herdr plugin action invoke <action>`. Bind them in
@@ -95,8 +95,8 @@ herdr runs plugin actions only through keybindings or
 [[keys.command]]
 key = "prefix+i"
 type = "plugin_action"
-command = "sungjunyoung.linear-title.refresh"
-description = "refresh Linear title"
+command = "sungjunyoung.linear.refresh"
+description = "refresh workspace title"
 ```
 
 ## Configuration
@@ -123,14 +123,14 @@ emits the event, so install and set it up on that machine.
 ## Herdr desktop app
 
 The same titles work in the Herdr desktop app (`herdr-app`) through a mod in
-`herdr-app/mods/linear-title`. From a checkout of this repository:
+`herdr-app/mods/herdr-linear`. From a checkout of this repository:
 
 ```sh
 nix develop --command make install-app
 ```
 
-This installs the binary to `~/.local/bin/herdr-linear-title` and copies the
-mod into `~/.config/herdr-app/mods/linear-title`. Rerun it after changing the
+This installs the binary to `~/.local/bin/herdr-linear` and copies the
+mod into `~/.config/herdr-app/mods/herdr-linear`. Rerun it after changing the
 mod.
 
 herdr-app does not dock a new mod into the shipped `main` layout. To show it
@@ -147,13 +147,13 @@ with a row that holds it and the mod:
 { "id": "footer", "type": "row", "size": { "px": 28 }, "resizable": false,
   "children": [
     { "id": "status", "type": "block", "content": { "mod": "workspace-status" } },
-    { "id": "linear-title", "type": "block", "size": { "px": 420 },
-      "content": { "mod": "linear-title" } } ] }
+    { "id": "herdr-linear", "type": "block", "size": { "px": 420 },
+      "content": { "mod": "herdr-linear" } } ] }
 ```
 
 A cloned layout no longer gets Herdr's updates to `main`. To stay on `main`,
 open the mod as a small kept window instead, which floats over the layout:
-`herdr-app do mod.open --name linear-title`.
+`herdr-app do mod.open --name herdr-linear`.
 
 The footer shows the issue of the shown space and follows it when you switch
 spaces. Use the footer or the kept window, not both. When the last result is
@@ -164,7 +164,7 @@ The app shares `config.toml` and the OAuth token with the TUI plugin, so one
 setup serves both. Without the TUI plugin, run setup once from a terminal:
 
 ```sh
-herdr-linear-title setup
+herdr-linear setup
 ```
 
 The mod renames a space when its branch has an issue reference and the space
@@ -175,15 +175,15 @@ minute. A name you set yourself is kept until you refresh.
 Commands, bound in `~/.config/herdr-app/keys.json`:
 
 ```json
-{ "global": { "cmd-alt-l": "linear-title.refresh" } }
+{ "global": { "cmd-alt-l": "herdr-linear.refresh" } }
 ```
 
 | Command | Effect |
 | --- | --- |
-| `linear-title.refresh` | Retitle the focused space, overwriting its name |
-| `linear-title.refresh-all` | Retitle every space, retrying failures |
-| `linear-title.setup` | Open setup in a new tab |
-| `linear-title.logout` | Revoke and delete the OAuth token |
+| `herdr-linear.refresh` | Retitle the focused space, overwriting its name |
+| `herdr-linear.refresh-all` | Retitle every space, retrying failures |
+| `herdr-linear.setup` | Open setup in a new tab |
+| `herdr-linear.logout` | Revoke and delete the OAuth token |
 
 Limits:
 
@@ -193,10 +193,26 @@ Limits:
 - The mod runs only while the shown layout holds it (the `linear` footer or
   the kept window).
 
+## Upgrading from herdr-linear-title
+
+This project was renamed from `herdr-linear-title` (plugin id
+`sungjunyoung.linear-title`). The existing login keeps working:
+
+- On its first run, `herdr-linear` copies `config.toml` and the OAuth token
+  from the `sungjunyoung.linear-title` config and state directories when its
+  own are empty.
+- Uninstall the old TUI plugin so both do not retitle the same workspaces:
+  `herdr plugin uninstall sungjunyoung.linear-title`.
+- Rebind `linear-title.*` commands in `~/.config/herdr-app/keys.json` to
+  `herdr-linear.*`, and plugin actions in `~/.config/herdr/config.toml` to
+  `sungjunyoung.linear.*`.
+- `make install-app` replaces the old app mod. In a cloned layout, change the
+  block to `"mod": "herdr-linear"`.
+
 ## Troubleshooting
 
 ```sh
-herdr plugin log list --plugin sungjunyoung.linear-title
+herdr plugin log list --plugin sungjunyoung.linear
 ```
 
 Every run logs what it did ("renamed to ...", "kept user label ...") or why it

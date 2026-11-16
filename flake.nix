@@ -17,7 +17,7 @@
     {
       packages = forAllSystems (pkgs: {
         default = pkgs.buildGoModule {
-          pname = "herdr-linear-title";
+          pname = "herdr-linear";
           version = "0.1.0";
           src = pkgs.lib.fileset.toSource {
             root = ./.;
@@ -29,7 +29,7 @@
             ];
           };
           vendorHash = "sha256-k3NBfC6PQIzPRNexWofyJKeDDKKq76GxSIA5LvSyeuE=";
-          subPackages = [ "cmd/herdr-linear-title" ];
+          subPackages = [ "cmd/herdr-linear" ];
           env.CGO_ENABLED = "0";
           # Tests bind loopback ports, which the darwin build sandbox denies.
           # They run with `make test` instead.
@@ -38,7 +38,7 @@
             "-s"
             "-w"
           ];
-          meta.mainProgram = "herdr-linear-title";
+          meta.mainProgram = "herdr-linear";
         };
       });
 

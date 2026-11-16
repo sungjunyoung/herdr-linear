@@ -1,4 +1,4 @@
-# herdr-linear-title 계획
+# herdr-linear 계획
 
 herdr에서 worktree를 만들거나 열면, 브랜치명에서 Linear 이슈 식별자(`HOMECO-2290`)를 추출해 Linear 이슈 타이틀을 조회하고 workspace label을 `HOMECO-2290 무슨무슨 피처`로 바꾸는 herdr 플러그인.
 
@@ -89,7 +89,7 @@ flowchart LR
     E[worktree.created / worktree.opened] -->|event hook| H
     A[action: refresh / refresh-all / setup] --> H
   end
-  H[bin/herdr-linear-title] -->|config.toml| C[(HERDR_PLUGIN_CONFIG_DIR)]
+  H[bin/herdr-linear] -->|config.toml| C[(HERDR_PLUGIN_CONFIG_DIR)]
   H -->|oauth.json, labels.json| S[(HERDR_PLUGIN_STATE_DIR)]
   H -->|GraphQL| L[Linear API]
   H -->|HERDR_BIN_PATH workspace get/list/rename, worktree list, notification show, plugin pane open| herdrCLI[herdr CLI]
@@ -98,7 +98,7 @@ flowchart LR
 ### 3.1 레포 구조
 
 ```text
-herdr-linear-title/
+herdr-linear/
   flake.nix              # devShell(go, gopls, gotools, golangci-lint, gnumake) + packages.default(buildGoModule, CGO_ENABLED=0)
   flake.lock
   .envrc                 # use flake
@@ -107,7 +107,7 @@ herdr-linear-title/
   Makefile               # build / test / lint / fmt / link / clean
   herdr-plugin.toml
   go.mod / go.sum
-  cmd/herdr-linear-title/
+  cmd/herdr-linear/
     main.go              # 서브커맨드 dispatch, herdr env 로드, 알림/에러 메시지
     hook.go              # worktree.created / worktree.opened
     refresh.go           # refresh, refresh-all
@@ -134,7 +134,7 @@ herdr-linear-title/
 build:
 	@out=$$($(NIX) build .#default --no-link --print-out-paths) && \
 		mkdir -p bin && \
-		install -m 0755 "$$out/bin/herdr-linear-title" $(BIN)
+		install -m 0755 "$$out/bin/herdr-linear" $(BIN)
 ```
 
 - `--no-link` + 복사로 GC root 문제 제거 (2.1 실측).
@@ -145,8 +145,8 @@ build:
 ### 3.3 manifest
 
 ```toml
-id = "sungjunyoung.linear-title"
-name = "Linear Title"
+id = "sungjunyoung.linear"
+name = "Herdr Linear"
 version = "0.1.0"
 min_herdr_version = "0.9.3"
 description = "Rename worktree workspaces to '<ISSUE-ID> <Linear issue title>'"
@@ -157,40 +157,40 @@ command = ["nix", "--extra-experimental-features", "nix-command flakes", "develo
 
 [[events]]
 on = "worktree.created"
-command = ["./bin/herdr-linear-title", "hook"]
+command = ["./bin/herdr-linear", "hook"]
 
 [[events]]
 on = "worktree.opened"
-command = ["./bin/herdr-linear-title", "hook"]
+command = ["./bin/herdr-linear", "hook"]
 
 [[actions]]
 id = "refresh"
 title = "Linear: refresh workspace title"
 contexts = ["workspace"]
-command = ["./bin/herdr-linear-title", "refresh"]
+command = ["./bin/herdr-linear", "refresh"]
 
 [[actions]]
 id = "refresh-all"
 title = "Linear: refresh all worktree titles"
-command = ["./bin/herdr-linear-title", "refresh-all"]
+command = ["./bin/herdr-linear", "refresh-all"]
 
 [[actions]]
 id = "setup"
 title = "Linear: setup / login"
-command = ["./bin/herdr-linear-title", "open-setup"]
+command = ["./bin/herdr-linear", "open-setup"]
 
 [[actions]]
 id = "logout"
 title = "Linear: log out"
-command = ["./bin/herdr-linear-title", "logout"]
+command = ["./bin/herdr-linear", "logout"]
 
 [[panes]]
 id = "setup"
-title = "Linear Title Setup"
+title = "Herdr Linear Setup"
 placement = "popup"
 width = "80%"
 height = 24
-command = ["./bin/herdr-linear-title", "setup"]
+command = ["./bin/herdr-linear", "setup"]
 ```
 
 ### 3.4 설정 파일
@@ -228,7 +228,7 @@ oauth_redirect_port = 53682   # Linear App에 http://localhost:<port>/callback �
 
 ```text
 resolve(workspace_id, branch, checkout_path, mode=auto|force)
-  1. config 로드. 없음 → notify("Linear Title: setup 필요") 후 종료
+  1. config 로드. 없음 → notify("Herdr Linear: setup 필요") 후 종료
   2. branch.Extract(branch, team_keys) → "HOMECO-2290" | none
      none → exit 0 (develop, main 등 조용히 무시)
   3. mode=auto 가드: 현재 label(`workspace get`으로 재조회) ∈
@@ -301,7 +301,7 @@ E2E (격리 herdr 서버 + tmux TUI client + 실제 Linear OAuth App, 2026-10-06
 | logout | revoke + `oauth.json` 삭제 |
 | install 모사: 임시 git checkout에서 `[[build]]` argv를 HERDR env 없이 실행 후 디렉터리 이동 | 바이너리 실행됨 |
 
-7. **배포 (남음)**: GitHub push, `herdr-plugin` topic. 다른 머신에서 `herdr plugin install sungjunyoung/herdr-linear-title` → `nix-collect-garbage` 후 훅 동작 확인. desktop1 WSL에서 OAuth login 1회.
+7. **배포 (남음)**: GitHub push, `herdr-plugin` topic. 다른 머신에서 `herdr plugin install sungjunyoung/herdr-linear` → `nix-collect-garbage` 후 훅 동작 확인. desktop1 WSL에서 OAuth login 1회.
 
 ## 5. 리스크 확인 결과
 

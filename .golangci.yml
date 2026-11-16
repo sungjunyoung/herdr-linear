@@ -25,4 +25,4 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/sungjunyoung/herdr-linear-title
+        - github.com/sungjunyoung/herdr-linear

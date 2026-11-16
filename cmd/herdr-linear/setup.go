@@ -12,10 +12,10 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/sungjunyoung/herdr-linear-title/internal/auth"
-	"github.com/sungjunyoung/herdr-linear-title/internal/browser"
-	"github.com/sungjunyoung/herdr-linear-title/internal/config"
-	"github.com/sungjunyoung/herdr-linear-title/internal/linear"
+	"github.com/sungjunyoung/herdr-linear/internal/auth"
+	"github.com/sungjunyoung/herdr-linear/internal/browser"
+	"github.com/sungjunyoung/herdr-linear/internal/config"
+	"github.com/sungjunyoung/herdr-linear/internal/linear"
 )
 
 // setup interactively writes config.toml, logs in, and verifies the
@@ -33,7 +33,7 @@ func (a *app) setup(ctx context.Context, in *os.File, out io.Writer) error {
 }
 
 func (a *app) runSetup(ctx context.Context, p *prompter) error {
-	fmt.Fprintf(p.out, "Linear Title setup\nConfig: %s\n\n", config.Path(a.configDir))
+	fmt.Fprintf(p.out, "Herdr Linear setup\nConfig: %s\n\n", config.Path(a.configDir))
 
 	// Previous values are only defaults; a broken file is overwritten.
 	prev, _ := config.Load(a.configDir)

@@ -1,7 +1,7 @@
 # Run targets inside the flake dev shell (direnv `use flake`, or
 # `nix develop -c make <target>`), which provides go, golangci-lint and make.
 
-BIN := bin/herdr-linear-title
+BIN := bin/herdr-linear
 NIX := nix --extra-experimental-features 'nix-command flakes'
 
 .PHONY: build test lint fmt link install-app clean
@@ -14,11 +14,11 @@ NIX := nix --extra-experimental-features 'nix-command flakes'
 build:
 	@out=$$($(NIX) build .#default --no-link --print-out-paths) && \
 		mkdir -p bin && \
-		install -m 0755 "$$out/bin/herdr-linear-title" $(BIN)
+		install -m 0755 "$$out/bin/herdr-linear" $(BIN)
 
 test:
 	go test -race ./...
-	node --test herdr-app/mods/linear-title/policy.test.mjs
+	node --test herdr-app/mods/herdr-linear/policy.test.mjs
 
 lint:
 	golangci-lint run ./...
@@ -33,14 +33,14 @@ link: build
 
 # Installs the binary and copies the mod into the Herdr desktop app; rerun
 # after editing the mod. Open it once with `herdr-app do mod.open --name
-# linear-title` (see README).
-APP_MOD := $(HOME)/.config/herdr-app/mods/linear-title
+# herdr-linear` (see README).
+APP_MOD := $(HOME)/.config/herdr-app/mods/herdr-linear
 install-app: build
 	mkdir -p $(HOME)/.local/bin
-	install -m 0755 $(BIN) $(HOME)/.local/bin/herdr-linear-title
+	install -m 0755 $(BIN) $(HOME)/.local/bin/herdr-linear
 	if [ -L "$(APP_MOD)" ]; then rm "$(APP_MOD)"; fi
 	mkdir -p "$(APP_MOD)"
-	cp herdr-app/mods/linear-title/main.js herdr-app/mods/linear-title/mod.json herdr-app/mods/linear-title/policy.js "$(APP_MOD)/"
+	cp herdr-app/mods/herdr-linear/main.js herdr-app/mods/herdr-linear/mod.json herdr-app/mods/herdr-linear/policy.js "$(APP_MOD)/"
 
 clean:
 	rm -rf bin result

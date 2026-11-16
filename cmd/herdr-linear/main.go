@@ -1,4 +1,4 @@
-// Command herdr-linear-title is a herdr plugin that renames worktree
+// Command herdr-linear is a herdr plugin that renames worktree
 // workspaces to "<ISSUE-ID> <Linear issue title>".
 //
 // herdr runs it with a subcommand from herdr-plugin.toml and injects the
@@ -18,19 +18,19 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/sungjunyoung/herdr-linear-title/internal/auth"
-	"github.com/sungjunyoung/herdr-linear-title/internal/branch"
-	"github.com/sungjunyoung/herdr-linear-title/internal/config"
-	"github.com/sungjunyoung/herdr-linear-title/internal/herdr"
-	"github.com/sungjunyoung/herdr-linear-title/internal/labels"
-	"github.com/sungjunyoung/herdr-linear-title/internal/linear"
-	"github.com/sungjunyoung/herdr-linear-title/internal/retitle"
+	"github.com/sungjunyoung/herdr-linear/internal/auth"
+	"github.com/sungjunyoung/herdr-linear/internal/branch"
+	"github.com/sungjunyoung/herdr-linear/internal/config"
+	"github.com/sungjunyoung/herdr-linear/internal/herdr"
+	"github.com/sungjunyoung/herdr-linear/internal/labels"
+	"github.com/sungjunyoung/herdr-linear/internal/linear"
+	"github.com/sungjunyoung/herdr-linear/internal/retitle"
 )
 
 const (
-	notifyTitle     = "Linear Title"
-	defaultPluginID = "sungjunyoung.linear-title"
-	usage           = "usage: herdr-linear-title hook|refresh|refresh-all|open-setup|setup|logout|resolve <branch>"
+	notifyTitle     = "Herdr Linear"
+	defaultPluginID = "sungjunyoung.linear"
+	usage           = "usage: herdr-linear hook|refresh|refresh-all|open-setup|setup|logout|resolve <branch>"
 )
 
 func main() {
@@ -38,7 +38,7 @@ func main() {
 	err := run(ctx, os.Args[1:])
 	stop()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "herdr-linear-title:", err)
+		fmt.Fprintln(os.Stderr, "herdr-linear:", err)
 		os.Exit(1)
 	}
 }
@@ -117,6 +117,9 @@ func newApp(log io.Writer) (*app, error) {
 			a.stateDir = filepath.Join(base, "herdr", "plugins", a.pluginID)
 		}
 	}
+	if err := migrateLegacy(a.configDir, a.stateDir); err != nil {
+		fmt.Fprintln(a.log, "migrating legacy plugin data:", err)
+	}
 	return a, nil
 }
 
@@ -187,7 +190,7 @@ func needsSetup(err error) bool {
 }
 
 func userMessage(err error) string {
-	const setupHint = " Run setup (\"Linear: setup / login\" in herdr, or herdr-linear-title setup)."
+	const setupHint = " Run setup (\"Linear: setup / login\" in herdr, or herdr-linear setup)."
 	switch {
 	case errors.Is(err, config.ErrNotConfigured):
 		return "Not configured." + setupHint

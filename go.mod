@@ -1,4 +1,4 @@
-module github.com/sungjunyoung/herdr-linear-title
+module github.com/sungjunyoung/herdr-linear
 
 go 1.26.0
 

@@ -6,10 +6,10 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/sungjunyoung/herdr-linear-title/internal/branch"
-	"github.com/sungjunyoung/herdr-linear-title/internal/herdr"
-	"github.com/sungjunyoung/herdr-linear-title/internal/labels"
-	"github.com/sungjunyoung/herdr-linear-title/internal/linear"
+	"github.com/sungjunyoung/herdr-linear/internal/branch"
+	"github.com/sungjunyoung/herdr-linear/internal/herdr"
+	"github.com/sungjunyoung/herdr-linear/internal/labels"
+	"github.com/sungjunyoung/herdr-linear/internal/linear"
 )
 
 // Mode controls whether labels chosen by the user are preserved.
