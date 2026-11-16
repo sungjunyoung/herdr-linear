@@ -34,8 +34,8 @@ link: build
 # Installs the binary, the mods and the herdr-linear layout into the Herdr
 # desktop app; rerun after editing a mod.
 # An old `linear` layout clone that still shows the linear-title mod is set
-# aside, so two mods do not retitle the same spaces; the switch to
-# herdr-linear waits a second for the app to read the new layout file.
+# aside once the app has switched to herdr-linear, so two mods do not retitle
+# the same spaces; the switch waits a second for the app to read the new file.
 APP := $(HOME)/.config/herdr-app
 APP_MODS := herdr-linear herdr-linear-panel herdr-linear-button
 install-app: build
@@ -54,8 +54,12 @@ install-app: build
 	old="$(APP)/layouts/linear.json"; \
 	if [ -f "$$old" ] && grep -q linear-title "$$old"; then \
 		sleep 1; \
-		herdr-app do layout.switch '{"name":"herdr-linear"}' || true; \
-		mv "$$old" "$$old.bak-$$(date +%Y%m%d%H%M%S)"; \
+		if herdr-app do layout.switch '{"name":"herdr-linear"}' >/dev/null; then \
+			mv "$$old" "$$old.bak-$$(date +%Y%m%d%H%M%S)"; \
+		else \
+			echo "Could not switch the Herdr app to herdr-linear (is it running?)."; \
+			echo "Switch with ctrl-shift-l, then remove $$old."; \
+		fi; \
 	fi
 
 clean:

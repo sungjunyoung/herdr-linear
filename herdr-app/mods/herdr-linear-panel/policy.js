@@ -42,7 +42,7 @@ export function parseResult({ code, stdout, stderr }) {
 // Linear's own branch name, or any branch that carries the identifier as a
 // whole token (homeco-412-…), so HOMECO-41 does not claim homeco-412.
 export function linkOf(issue, allPanes, allSpaces) {
-  const ref = new RegExp(`(^|[^a-z0-9])${issue.identifier.toLowerCase()}($|[^0-9])`);
+  const ref = new RegExp(`(^|[^a-z0-9])${issue.identifier.toLowerCase()}($|[^a-z0-9])`);
   const pane = allPanes.find((p) => p.branch && (p.branch === issue.branchName || ref.test(p.branch.toLowerCase())));
   if (!pane) return null;
   const space = allSpaces.find((s) => s.tabs.some((t) => t.id === pane.tab));

@@ -34,6 +34,7 @@ test("linkOf finds the space and tab working on an issue", () => {
   assert.equal(linkOf(i, [{ tab: "c1", branch: "homeco-7" }], allSpaces).branch, "homeco-7", "identifier in another branch");
   assert.equal(linkOf(i, [{ tab: "c1", branch: "user/homeco-7-login" }], allSpaces).branch, "user/homeco-7-login", "identifier as a token");
   assert.equal(linkOf(i, [{ tab: "c1", branch: "homeco-70" }, { tab: "c1", branch: null }], allSpaces), null, "a longer number is another issue");
+  assert.equal(linkOf(i, [{ tab: "c1", branch: "homeco-7abc" }], allSpaces), null, "letters after the number are another ref");
   assert.equal(linkOf(i, [{ tab: "c1", branch: "main" }, { tab: "c1", branch: null }], allSpaces), null);
 });
 
