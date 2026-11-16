@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { INITIAL, groupIssues, linkOf, parseResult, step } from "./policy.js";
+import { INITIAL, groupIssues, linkOf, parseResult, shortDate, statusIcon, step } from "./policy.js";
 
 const issue = (identifier, type, priority, name = type) => ({
   identifier,
@@ -73,4 +73,31 @@ test("step never starts two loads, and a state change waits for its reload", () 
   const denied = step(pending, { type: "set-done", res: { status: "error", message: "no write scope", needsSetup: true } });
   assert.deepEqual([denied.pending, denied.load], [null, { kind: "error", message: "no write scope", needsSetup: true }]);
   assert.equal(denied.issues.length, 1, "the list stays under the error");
+});
+
+test("statusIcon follows Linear's glyphs", () => {
+  const states = [
+    { id: "rev", type: "started", position: 1002 },
+    { id: "prog", type: "started", position: 2 },
+  ];
+  const icon = (state) => statusIcon(state, states).split("/").pop();
+  assert.equal(icon({ id: "prog", type: "started" }), "status-started.svg");
+  assert.equal(icon({ id: "rev", type: "started" }), "status-review.svg");
+  assert.equal(icon({ type: "backlog" }), "status-backlog.svg");
+  assert.equal(icon({ type: "unstarted" }), "status-unstarted.svg");
+  assert.equal(icon({ type: "triage" }), "status-unstarted.svg");
+  assert.equal(icon({ type: "duplicate" }), "status-canceled.svg");
+  assert.equal(icon({ type: "completed" }), "status-completed.svg");
+});
+
+test("shortDate", () => {
+  assert.equal(shortDate("2026-11-16T03:00:00.000Z").startsWith("Nov "), true);
+  assert.equal(shortDate("nope"), "");
+});
+
+test("groupIssues puts the later started state first", () => {
+  const prog = { id: "prog", name: "In Progress", type: "started" }, rev = { id: "rev", name: "In Review", type: "started" };
+  const states = { HOMECO: [{ ...prog, position: 2 }, { ...rev, position: 1002 }] };
+  const groups = groupIssues([{ identifier: "A", priority: 0, state: prog }, { identifier: "B", priority: 0, state: rev }], states);
+  assert.deepEqual(groups.map((g) => g.name), ["In Review", "In Progress"]);
 });

@@ -52,17 +52,41 @@ export function linkOf(issue, allPanes, allSpaces) {
 
 const TYPE_RANK = { started: 0, unstarted: 1, triage: 2, backlog: 3 };
 
-// Work in progress first, then by priority (0, no priority, last); one group
-// per state name, in that order.
-export function groupIssues(issues) {
+// Work in progress first, and within a type the later state first (In Review
+// above In Progress), as Linear lists them; then by priority (0, no priority,
+// last). One group per state name, in that order.
+export function groupIssues(issues, states = {}) {
+  const pos = new Map(Object.values(states).flat().map((x) => [x.id, x.position]));
   const sorted = [...issues].sort(
-    (a, b) => (TYPE_RANK[a.state.type] ?? 9) - (TYPE_RANK[b.state.type] ?? 9) || (a.priority || 9) - (b.priority || 9),
+    (a, b) => (TYPE_RANK[a.state.type] ?? 9) - (TYPE_RANK[b.state.type] ?? 9)
+      || (pos.get(b.state.id) ?? 0) - (pos.get(a.state.id) ?? 0)
+      || (a.priority || 9) - (b.priority || 9),
   );
   const groups = [];
   for (const i of sorted) {
     const g = groups.find((x) => x.name === i.state.name);
     if (g) g.items.push(i);
-    else groups.push({ name: i.state.name, type: i.state.type, items: [i] });
+    else groups.push({ name: i.state.name, type: i.state.type, state: i.state, team: i.team, items: [i] });
   }
   return groups;
+}
+
+// Linear's status glyphs: the first started state is half full, later ones
+// (In Review) mostly full.
+export function statusIcon(state, teamStates = []) {
+  const file = (name) => `mods/herdr-linear-panel/status-${name}.svg`;
+  if (state.type === "completed") return file("completed");
+  if (state.type === "canceled" || state.type === "duplicate") return file("canceled");
+  if (state.type === "backlog") return file("backlog");
+  if (state.type !== "started") return file("unstarted");
+  const started = teamStates.filter((x) => x.type === "started").sort((a, b) => a.position - b.position);
+  return file(started.length > 1 && started[0].id !== state.id ? "review" : "started");
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// "2026-11-16T13:08:02.190Z" -> "Nov 16" in local time, "" when unparsable.
+export function shortDate(iso) {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : `${MONTHS[d.getMonth()]} ${d.getDate()}`;
 }

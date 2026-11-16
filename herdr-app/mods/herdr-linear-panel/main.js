@@ -1,12 +1,14 @@
 // Your Linear issues, grouped by state, each linked to the space and tab
 // working on it (by branch name). Data comes from `herdr-linear issues`.
 
-import { View, div } from "gpui-kit";
+import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { checking, exec, home, panes, run, spaces, theme } from "herdr";
-import { INITIAL, groupIssues, linkOf, parseResult, step } from "./policy.js";
+import { INITIAL, groupIssues, linkOf, parseResult, shortDate, statusIcon, step } from "./policy.js";
 
-const PRIORITY = { 1: ["Urgent", "blocked"], 2: ["High", "working"] };
+// Linear's priority glyph: how many of the three bars are lit.
+const BARS = { 2: 3, 3: 2, 4: 1 };
+const URGENT = "#f2994a";
 // The title mod's commands; it sits in the same layout's footer.
 const MENU = [
   ["Refresh title", "herdr-linear.refresh"],
@@ -25,11 +27,17 @@ export default class LinearPanel extends View {
     this.bin = `${home()}/.local/bin/herdr-linear`;
     this.s = INITIAL;
     this.menu = false;
+    try { this.folded = new Set(JSON.parse(localStorage.getItem("folded") ?? "[]")); } catch { this.folded = new Set(); }
     if (checking()) return;
     cx.timer.every(5 * 60_000, (cx) => this.load(cx));
     // Keeps "<n>m ago" current between loads.
     cx.timer.every(60_000, (cx) => cx.notify());
     this.load(cx);
+  }
+
+  fold(name) {
+    if (this.folded.has(name)) this.folded.delete(name); else this.folded.add(name);
+    try { localStorage.setItem("folded", JSON.stringify([...this.folded])); } catch {}
   }
 
   dispatch(event) {
@@ -71,62 +79,75 @@ export default class LinearPanel extends View {
     const t = theme();
     const s = this.s;
     const allPanes = panes(), allSpaces = spaces();
-    const groups = groupIssues(s.issues);
+    const groups = groupIssues(s.issues, s.states);
     const stop = (_e, cx) => cx.stop_propagation();
+    const press = (el, action) => el.on_mouse_down("left", stop).on_click((_e, cx) => { cx.stop_propagation(); action(cx); });
 
-    const link = (id, label, action) => div().id(id).text_size(11).text_color(t.dim).hover((st) => st.text_color(t.foreground))
-      .on_mouse_down("left", stop).on_click((_e, cx) => { cx.stop_propagation(); action(cx); }).child(label);
+    const link = (id, label, action) => press(div().id(id).text_size(11).text_color(t.dim).hover((st) => st.text_color(t.foreground)), action).child(label);
 
-    const button = (id, label, primary, action) => div().id(id).flex_none().px(9).py(3).rounded(5).text_size(11.5).font_medium().border_1()
-      .border_color(primary ? t.solid : t.border).bg(primary ? t.solid : t.raised).text_color(primary ? t.solid_foreground : t.foreground)
-      .hover((st) => st.opacity(0.85)).on_mouse_down("left", stop)
-      .on_click((_e, cx) => { cx.stop_propagation(); action(cx); }).child(label);
+    const button = (id, label, action) => press(div().id(id).flex_none().px(9).py(3).rounded(5).text_size(11.5).font_medium()
+      .bg(t.solid).text_color(t.solid_foreground).hover((st) => st.opacity(0.85)), action).child(label);
 
-    const dot = (status) => status === "working"
-      ? div().size(9).rounded(5).border_2().border_color(t.working)
-      : div().size(8).rounded(4).bg(status ? t[status] : t.dim);
+    const status = (state, team) => svg(statusIcon(state, s.states[team])).size(14).flex_none().text_color(state.color || t.muted);
 
-    const chip = (i) => {
-      const open = s.picking === i.identifier;
-      return div().id(`state-${i.identifier}`).flex_none().px(7).py(2).rounded(5).text_size(11).border_1()
-        .border_color(open ? t.input : t.border).bg(open ? t.selected : t.raised).text_color(t.muted)
-        .hover((st) => st.text_color(t.foreground)).on_mouse_down("left", stop)
-        .on_click((_e, cx) => { cx.stop_propagation(); this.dispatch({ type: "pick", id: i.identifier }); cx.notify(); })
-        .child(s.pending === i.identifier ? "Updating…" : i.state.name);
+    const priority = (p) => {
+      if (p === 1) return div().size(14).flex_none().rounded(3).bg(URGENT).flex().items_center().justify_center()
+        .text_size(10).font_bold().text_color("#ffffff").child("!");
+      const lit = BARS[p];
+      if (!lit) return div().w(14).flex_none().text_size(11).text_color(t.dim).child("···");
+      return h_flex().w(14).h(12).flex_none().gap(1).items_end()
+        .children([6, 9, 12].map((h, n) => div().w(3).h(h).rounded(1).bg(n < lit ? t.muted : t.border)));
     };
 
-    const picker = (i) => h_flex().flex_wrap().gap(5).pt(2).children((s.states[i.team] ?? []).map((st) => {
-      const current = st.id === i.state.id;
-      return div().id(`set-${i.identifier}-${st.id}`).px(7).py(2).rounded(5).text_size(11).border_1()
-        .border_color(current ? t.accent : t.border).bg(current ? t.selected : t.background)
-        .text_color(current ? t.foreground : t.muted).hover((x) => x.bg(t.hover)).on_mouse_down("left", stop)
-        .on_click((_e, cx) => { cx.stop_propagation(); if (!current) this.setState(i, st.id, cx); })
-        .child(st.name);
-    }));
+    const agent = (st) => st === "working"
+      ? div().size(8).flex_none().rounded(4).border_2().border_color(t.working)
+      : div().size(7).flex_none().rounded(4).bg(st ? t[st] : t.dim);
+
+    const picker = (i) => v_flex().mx(12).mb(6).py(4).rounded(8).border_1().border_color(t.border).bg(t.raised)
+      .children((s.states[i.team] ?? []).map((st) => {
+        const current = st.id === i.state.id;
+        return press(h_flex().id(`set-${i.identifier}-${st.id}`).h(28).px(10).gap(8).items_center().text_size(12.5)
+          .hover((x) => x.bg(t.hover)), (cx) => { if (!current) this.setState(i, st.id, cx); })
+          .child(status(st, i.team))
+          .child(div().flex_1().child(st.name))
+          .when(current, (el) => el.child(div().text_size(11).text_color(t.dim).child("✓")));
+      }));
 
     const row = (i) => {
       const l = linkOf(i, allPanes, allSpaces);
-      const pri = PRIORITY[i.priority];
-      const open = () => l ? (run("space.select", { id: l.space.id }), run("tab.select", { id: l.tab.id })) : exec("open", [i.url]);
-      return v_flex().id(`issue-${i.identifier}`).w_full().px(14).py(8).gap(5).hover((st) => st.bg(t.hover)).on_click(() => open())
-        .child(h_flex().gap(8).items_center()
-          .child(div().flex_none().text_size(11).text_color(t.dim).child(i.identifier))
-          .child(div().flex_1().min_w(0).truncate().font_medium().child(i.title))
-          .when(Boolean(pri), (el) => el.child(div().flex_none().text_size(11).text_color(t[pri[1]]).child(pri[0])))
-          .child(chip(i))
-          .when(Boolean(l), (el) => el.child(button(`open-${i.identifier}`, "Linear", false, () => exec("open", [i.url])))))
-        .when(Boolean(l), (el) => el.child(h_flex().gap(8).items_center().text_size(11.5).text_color(t.muted)
-          .child(dot(l.tab.status))
-          .child(div().flex_1().min_w(0).truncate().child(`${l.space.name} › ${l.tab.name}`))))
-        .when(s.picking === i.identifier, (el) => el.child(picker(i)));
+      const go = () => l ? (run("space.select", { id: l.space.id }), run("tab.select", { id: l.tab.id })) : exec("open", [i.url]);
+      const pending = s.pending === i.identifier;
+      return [
+        h_flex().id(`issue-${i.identifier}`).h(36).px(12).gap(9).items_center().hover((st) => st.bg(t.hover)).on_click(() => go())
+          .child(priority(i.priority))
+          .child(div().flex_none().min_w(86).text_size(12).text_color(t.dim).child(i.identifier))
+          .child(press(div().id(`state-${i.identifier}`).flex_none().p(2).rounded(4).hover((st) => st.bg(t.selected)),
+            (cx) => { this.dispatch({ type: "pick", id: i.identifier }); cx.notify(); })
+            .when(pending, (el) => el.opacity(0.4)).child(status(i.state, i.team)))
+          .child(div().flex_1().min_w(0).truncate().text_size(13).child(i.title))
+          .when(Boolean(i.project), (el) => el.child(h_flex().flex_none().max_w(120).h(22).px(8).gap(5).items_center().rounded(11)
+            .border_1().border_color(t.border).text_size(11.5).text_color(t.muted)
+            .child(svg("mods/herdr-linear-panel/project.svg").size(12).flex_none())
+            .child(div().min_w(0).truncate().child(i.project))))
+          .when(Boolean(l), (el) => el.child(agent(l.tab.status)))
+          .when(Boolean(l), (el) => el.child(link(`open-${i.identifier}`, "↗", () => exec("open", [i.url]))))
+          .child(div().flex_none().w(44).text_right().text_size(11.5).text_color(t.dim).child(shortDate(i.updatedAt))),
+        ...(s.picking === i.identifier ? [picker(i)] : []),
+      ];
     };
 
-    const section = (g) => [
-      h_flex().px(14).pt(10).pb(4).gap(8).items_center().text_size(11.5)
-        .child(div().font_semibold().text_color(t.foreground).child(g.name))
-        .child(div().text_color(t.dim).child(String(g.items.length))),
-      ...g.items.map(row),
-    ];
+    const section = (g) => {
+      const folded = this.folded.has(g.name);
+      return [
+        h_flex().id(`group-${g.name}`).h(34).mx(6).mt(4).px(8).gap(9).items_center().rounded(6).bg(t.raised).hover((st) => st.bg(t.hover))
+          .on_click((_e, cx) => { this.fold(g.name); cx.notify(); })
+          .child(div().w(10).text_size(9).text_color(t.dim).child(folded ? "▶" : "▼"))
+          .child(status(g.state, g.team))
+          .child(div().text_size(13).font_medium().child(g.name))
+          .child(div().text_size(12.5).text_color(t.dim).child(String(g.items.length))),
+        ...(folded ? [] : g.items.flatMap(row)),
+      ];
+    };
 
     const sync = s.load.kind === "loading" ? "loading…" : s.at ? ago(s.at) : "";
     const error = s.load.kind === "error" ? s.load : null;
@@ -137,18 +158,17 @@ export default class LinearPanel extends View {
       .text_color(t.foreground).text_size(13)
       .child(h_flex().h(42).flex_none().px(14).gap(8).items_center().border_b(1).border_color(t.border)
         .child(div().font_semibold().child("My issues"))
-        .child(div().text_size(11).text_color(t.dim).child(s.issues.length ? String(s.issues.length) : ""))
+        .child(div().text_size(12).text_color(t.dim).child(s.issues.length ? String(s.issues.length) : ""))
         .child(div().flex_1())
         .child(link("linear-refresh", sync ? `${sync} · refresh` : "refresh", (cx) => this.load(cx)))
-        .child(div().id("linear-more").px(6).rounded(5).text_color(this.menu ? t.foreground : t.dim).when(this.menu, (el) => el.bg(t.selected))
-          .hover((st) => st.bg(t.hover)).on_mouse_down("left", stop)
-          .on_click((_e, cx) => { cx.stop_propagation(); this.menu = !this.menu; cx.notify(); }).child("⋯")))
+        .child(press(div().id("linear-more").px(6).rounded(5).text_color(this.menu ? t.foreground : t.dim).when(this.menu, (el) => el.bg(t.selected))
+          .hover((st) => st.bg(t.hover)), (cx) => { this.menu = !this.menu; cx.notify(); }).child("⋯")))
       .when(this.menu, (el) => el.child(h_flex().flex_none().flex_wrap().px(14).py(6).gap(12).bg(t.raised).border_b(1).border_color(t.border)
         .children(MENU.map(([label, command]) => link(`menu-${command}`, label, (cx) => { this.menu = false; run(command); cx.notify(); })))))
       .when(Boolean(error), (el) => el.child(h_flex().flex_none().px(14).py(8).gap(8).items_center().bg(t.raised).border_b(1).border_color(t.border)
         .child(div().flex_1().min_w(0).text_size(12).text_color(t.blocked).child(`Linear: ${error.message}`))
-        .when(error.needsSetup, (el) => el.child(button("linear-setup", "Set up", true, setup)))))
-      .child(v_flex().id("herdr-linear-list").flex_1().min_h(0).overflow_y_scrollbar()
+        .when(error.needsSetup, (el) => el.child(button("linear-setup", "Set up", setup)))))
+      .child(v_flex().id("herdr-linear-list").flex_1().min_h(0).pb(6).overflow_y_scrollbar()
         .children(groups.flatMap(section))
         .when(groups.length === 0, (el) => el.child(div().p(24).text_center().text_color(t.dim).child(empty))));
   }

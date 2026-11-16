@@ -162,7 +162,7 @@
               "type": "column",
               "hidden": true,
               "size": {
-                "px": 368
+                "px": 520
               },
               "min": 280,
               "max": 900,

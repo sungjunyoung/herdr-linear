@@ -150,7 +150,10 @@ func TestMyIssues(t *testing.T) {
 		gotKeys, _ = req.Variables["keys"].([]any)
 		respond(200, `{"data":{"viewer":{"assignedIssues":{"nodes":[
 			{"identifier":"HOMECO-1","title":"Fix login","url":"https://linear.app/x/issue/HOMECO-1","branchName":"homeco-1-fix-login","priority":2,
-			 "state":{"id":"s1","name":"In Progress","type":"started"},"team":{"key":"HOMECO"}}]}}}}`)(w, r)
+			 "updatedAt":"2026-11-16T12:00:00.000Z","state":{"id":"s1","name":"In Progress","type":"started","color":"#f2c94c"},
+			 "team":{"key":"HOMECO"},"project":{"name":"Infra"}},
+			{"identifier":"HOMECO-2","title":"No project","url":"u","branchName":"b","priority":0,"updatedAt":"t",
+			 "state":{"id":"s1","name":"In Progress","type":"started","color":"#f2c94c"},"team":{"key":"HOMECO"},"project":null}]}}}}`)(w, r)
 	})
 
 	issues, err := c.MyIssues(context.Background(), []string{"HOMECO", "ENG"})
@@ -160,9 +163,10 @@ func TestMyIssues(t *testing.T) {
 	want := AssignedIssue{
 		Identifier: "HOMECO-1", Title: "Fix login", URL: "https://linear.app/x/issue/HOMECO-1",
 		BranchName: "homeco-1-fix-login", Priority: 2,
-		State: StateRef{ID: "s1", Name: "In Progress", Type: "started"}, Team: "HOMECO",
+		State: StateRef{ID: "s1", Name: "In Progress", Type: "started", Color: "#f2c94c"}, Team: "HOMECO",
+		Project: "Infra", UpdatedAt: "2026-11-16T12:00:00.000Z",
 	}
-	if len(issues) != 1 || issues[0] != want {
+	if len(issues) != 2 || issues[0] != want || issues[1].Project != "" {
 		t.Errorf("MyIssues() = %+v, want [%+v]", issues, want)
 	}
 	if len(gotKeys) != 2 || gotKeys[0] != "HOMECO" || gotKeys[1] != "ENG" {
@@ -188,7 +192,7 @@ func TestWorkflowStatesGroupsAndSorts(t *testing.T) {
 	if len(states) != 2 || len(states["ENG"]) != 1 || strings.Join(ids, ",") != "todo,prog,done" {
 		t.Errorf("WorkflowStates() = %+v", states)
 	}
-	if states["HOMECO"][0] != (State{StateRef{"todo", "Todo", "unstarted"}, 0.5}) {
+	if states["HOMECO"][0] != (State{StateRef{"todo", "Todo", "unstarted", ""}, 0.5}) {
 		t.Errorf("first HOMECO state = %+v", states["HOMECO"][0])
 	}
 }

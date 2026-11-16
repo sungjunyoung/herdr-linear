@@ -190,14 +190,15 @@ Limits:
 ### Linear panel
 
 The Linear button at the right end of the tab bar opens a panel beside the
-work with your open Linear issues, grouped by state (in progress first, then
-by priority). It loads the first time you open it, then every 5 minutes
+work with your open Linear issues, laid out like Linear's list: grouped by
+state (In Review, In Progress, Todo, Backlog; click a group to fold it), each
+row with its priority, status, project and last update. It loads the first time you open it, then every 5 minutes
 and when you click refresh.
 
-- Clicking an issue goes to the space and tab whose branch carries it. Under
-  such an issue you see that space and tab with its agent status.
+- Clicking an issue goes to the space and tab whose branch carries it; such
+  a row shows that tab's agent status and `↗`, which opens it in Linear.
 - Clicking an issue no space works on opens it in Linear.
-- The state chip on each issue lists its team's states. Pick one to move the
+- Clicking an issue's status icon lists its team's states. Pick one to move the
   issue there. This needs write access: with OAuth, run setup again once to
   grant the `write` scope; a personal API key needs write access.
 - `⋯` in the panel header runs the title commands: Refresh title, Refresh all,
@@ -205,8 +206,8 @@ and when you click refresh.
 - When Linear needs a login or a new grant, the panel shows the error with a
   Set up button.
 
-The panel shows in its space the way Files and Changes do: Herdr remembers per
-space whether it was open.
+The panel stays open or closed when you switch spaces (Files and Changes are
+remembered per space).
 
 ## Upgrading from herdr-linear-title
 

@@ -69,14 +69,16 @@ func TestListIssuesOutput(t *testing.T) {
 			api: fakeAPI{
 				issues: []linear.AssignedIssue{{
 					Identifier: "HOMECO-1", Title: "Fix login", URL: "https://linear.app/x", BranchName: "homeco-1", Priority: 2,
-					State: linear.StateRef{ID: "s1", Name: "In Progress", Type: "started"}, Team: "HOMECO",
+					State: linear.StateRef{ID: "s1", Name: "In Progress", Type: "started", Color: "#f2c94c"}, Team: "HOMECO",
+					Project: "Infra", UpdatedAt: "2026-11-16T12:00:00.000Z",
 				}},
 				states: map[string][]linear.State{"HOMECO": {{StateRef: linear.StateRef{ID: "s0", Name: "Todo", Type: "unstarted"}, Position: 1}}},
 			},
 			want: `{"status":"ok",
 				"issues":[{"identifier":"HOMECO-1","title":"Fix login","url":"https://linear.app/x","branchName":"homeco-1","priority":2,
-					"state":{"id":"s1","name":"In Progress","type":"started"},"team":"HOMECO"}],
-				"states":{"HOMECO":[{"id":"s0","name":"Todo","type":"unstarted","position":1}]}}`,
+					"state":{"id":"s1","name":"In Progress","type":"started","color":"#f2c94c"},"team":"HOMECO",
+					"project":"Infra","updatedAt":"2026-11-16T12:00:00.000Z"}],
+				"states":{"HOMECO":[{"id":"s0","name":"Todo","type":"unstarted","color":"","position":1}]}}`,
 		},
 		{name: "empty", api: fakeAPI{}, want: `{"status":"ok","issues":[],"states":{}}`},
 		{name: "error", api: fakeAPI{err: errors.New("boom")}, want: `{"status":"error","message":"boom"}`, wantErr: true},
@@ -109,7 +111,7 @@ func TestChangeStateOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertJSON(t, got, `{"status":"ok","identifier":"HOMECO-1","state":{"id":"done","name":"Done","type":"completed"}}`)
+	assertJSON(t, got, `{"status":"ok","identifier":"HOMECO-1","state":{"id":"done","name":"Done","type":"completed","color":""}}`)
 
 	got, err = emitted(t, changeState(context.Background(), fakeAPI{err: linear.ErrForbidden}, "HOMECO-1", "done"))
 	if err == nil {

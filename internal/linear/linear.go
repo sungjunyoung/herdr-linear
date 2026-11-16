@@ -45,9 +45,10 @@ type Issue struct {
 
 // StateRef identifies a workflow state.
 type StateRef struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Type string `json:"type"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Color string `json:"color"`
 }
 
 // State is a team workflow state with its board position.
@@ -65,6 +66,8 @@ type AssignedIssue struct {
 	Priority   int      `json:"priority"`
 	State      StateRef `json:"state"`
 	Team       string   `json:"team"`
+	Project    string   `json:"project"`
+	UpdatedAt  string   `json:"updatedAt"`
 }
 
 // UpdatedIssue is an issue after a state change.
@@ -151,7 +154,7 @@ func (c *Client) MyIssues(ctx context.Context, teamKeys []string) ([]AssignedIss
 	const query = `query($keys: [String!]) {
   viewer {
     assignedIssues(first: 250, filter: { state: { type: { nin: ["completed", "canceled", "duplicate"] } }, team: { key: { in: $keys } } }) {
-      nodes { identifier title url branchName priority state { id name type } team { key } }
+      nodes { identifier title url branchName priority updatedAt state { id name type color } team { key } project { name } }
     }
   }
 }`
@@ -163,6 +166,9 @@ func (c *Client) MyIssues(ctx context.Context, teamKeys []string) ([]AssignedIss
 					Team struct {
 						Key string `json:"key"`
 					} `json:"team"`
+					Project *struct {
+						Name string `json:"name"`
+					} `json:"project"`
 				} `json:"nodes"`
 			} `json:"assignedIssues"`
 		} `json:"viewer"`
@@ -174,6 +180,9 @@ func (c *Client) MyIssues(ctx context.Context, teamKeys []string) ([]AssignedIss
 	for _, n := range out.Viewer.AssignedIssues.Nodes {
 		is := n.AssignedIssue
 		is.Team = n.Team.Key
+		if n.Project != nil {
+			is.Project = n.Project.Name
+		}
 		issues = append(issues, is)
 	}
 	return issues, nil
@@ -185,7 +194,7 @@ func (c *Client) WorkflowStates(ctx context.Context, teamKeys []string) (map[str
 	// ponytail: first 250 without pagination; teams have a handful of states.
 	const query = `query($keys: [String!]) {
   workflowStates(first: 250, filter: { team: { key: { in: $keys } } }) {
-    nodes { id name type position team { key } }
+    nodes { id name type color position team { key } }
   }
 }`
 	var out struct {
@@ -216,7 +225,7 @@ func (c *Client) SetIssueState(ctx context.Context, identifier, stateID string) 
 	const query = `mutation($id: String!, $stateId: String!) {
   issueUpdate(id: $id, input: { stateId: $stateId }) {
     success
-    issue { identifier state { id name type } }
+    issue { identifier state { id name type color } }
   }
 }`
 	var out struct {
