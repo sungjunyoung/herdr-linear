@@ -191,8 +191,8 @@ Limits:
 
 The Linear button at the right end of the tab bar opens a panel beside the
 work with your open Linear issues, grouped by state (in progress first, then
-by priority). It loads when the app starts, every 5 minutes, and when you
-click refresh.
+by priority). It loads the first time you open it, then every 5 minutes
+and when you click refresh.
 
 - Clicking an issue goes to the space and tab whose branch carries it. Under
   such an issue you see that space and tab with its agent status.

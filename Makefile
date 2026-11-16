@@ -32,7 +32,7 @@ link: build
 	herdr plugin link "$(CURDIR)"
 
 # Installs the binary, the mods and the herdr-linear layout into the Herdr
-# desktop app, and switches to that layout; rerun after editing a mod.
+# desktop app; rerun after editing a mod.
 # An old `linear` layout clone that still shows the linear-title mod is set
 # aside, so two mods do not retitle the same spaces; the switch to
 # herdr-linear waits a second for the app to read the new layout file.
