@@ -2,9 +2,9 @@
 /result
 /.direnv/
 
-# Written by herdr-app into the symlinked mod folder.
-/herdr-app/mods/herdr-linear/gpui-kit.d.ts
-/herdr-app/mods/herdr-linear/jsconfig.json
+# Written by herdr-app (check, symlinked mods) into mod folders.
+/herdr-app/mods/*/gpui-kit.d.ts
+/herdr-app/mods/*/jsconfig.json
 
 graft/
 .ignore

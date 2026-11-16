@@ -32,7 +32,8 @@ test("linkOf finds the space and tab working on an issue", () => {
   const exact = linkOf(i, [{ tab: "c1", branch: i.branchName }], allSpaces);
   assert.deepEqual(exact, { space: allSpaces[0], tab, branch: i.branchName });
   assert.equal(linkOf(i, [{ tab: "c1", branch: "homeco-7" }], allSpaces).branch, "homeco-7", "identifier in another branch");
-  assert.equal(linkOf(i, [{ tab: "c1", branch: "homeco-70" }, { tab: "c1", branch: null }], allSpaces).branch, "homeco-70", "substring rule, as the reference");
+  assert.equal(linkOf(i, [{ tab: "c1", branch: "user/homeco-7-login" }], allSpaces).branch, "user/homeco-7-login", "identifier as a token");
+  assert.equal(linkOf(i, [{ tab: "c1", branch: "homeco-70" }, { tab: "c1", branch: null }], allSpaces), null, "a longer number is another issue");
   assert.equal(linkOf(i, [{ tab: "c1", branch: "main" }, { tab: "c1", branch: null }], allSpaces), null);
 });
 

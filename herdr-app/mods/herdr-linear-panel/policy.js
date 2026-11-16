@@ -39,10 +39,11 @@ export function parseResult({ code, stdout, stderr }) {
   return { status: "error", message: why || `herdr-linear exited with code ${code}.`, needsSetup: false };
 }
 
-// Linear's own branch name, or any branch that carries the identifier (homeco-412-…).
+// Linear's own branch name, or any branch that carries the identifier as a
+// whole token (homeco-412-…), so HOMECO-41 does not claim homeco-412.
 export function linkOf(issue, allPanes, allSpaces) {
-  const id = issue.identifier.toLowerCase();
-  const pane = allPanes.find((p) => p.branch && (p.branch === issue.branchName || p.branch.toLowerCase().includes(id)));
+  const ref = new RegExp(`(^|[^a-z0-9])${issue.identifier.toLowerCase()}($|[^0-9])`);
+  const pane = allPanes.find((p) => p.branch && (p.branch === issue.branchName || ref.test(p.branch.toLowerCase())));
   if (!pane) return null;
   const space = allSpaces.find((s) => s.tabs.some((t) => t.id === pane.tab));
   const tab = space?.tabs.find((t) => t.id === pane.tab);
