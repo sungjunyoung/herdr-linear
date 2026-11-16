@@ -76,7 +76,8 @@ reaches the plugin through WSL's localhost forwarding.
 ### Personal API key
 
 Create a key in *Settings → Security & access → Personal API keys* (read
-access is enough) and choose "Personal API key" in setup.
+access is enough for titles; changing state from the Linear panel needs
+write access) and choose "Personal API key" in setup.
 
 ## Actions
 
@@ -129,31 +130,24 @@ The same titles work in the Herdr desktop app (`herdr-app`) through a mod in
 nix develop --command make install-app
 ```
 
-This installs the binary to `~/.local/bin/herdr-linear` and copies the
-mod into `~/.config/herdr-app/mods/herdr-linear`. Rerun it after changing the
-mod.
-
-herdr-app does not dock a new mod into the shipped `main` layout. To show it
-in the footer, clone `main` (this switches to the clone):
+This installs the binary to `~/.local/bin/herdr-linear`, copies the mods into
+`~/.config/herdr-app/mods/`, and installs the `herdr-linear` layout: Herdr's
+`main` layout with the title in the footer and a Linear button at the top
+right. Rerun it after changing a mod. Switch to the layout once with
+`ctrl-shift-l` or:
 
 ```sh
-herdr-app do layout.clone '{"name":"main","as":"linear"}'
+herdr-app do layout.switch '{"name":"herdr-linear"}'
 ```
 
-Then in `~/.config/herdr-app/layouts/linear.json` replace the `status` block
-with a row that holds it and the mod:
+When an older `linear` layout clone still shows the `linear-title` mod,
+`make install-app` switches to `herdr-linear` for you and moves the old file
+aside as `linear.json.bak-<time>`.
 
-```json
-{ "id": "footer", "type": "row", "size": { "px": 28 }, "resizable": false,
-  "children": [
-    { "id": "status", "type": "block", "content": { "mod": "workspace-status" } },
-    { "id": "herdr-linear", "type": "block", "size": { "px": 420 },
-      "content": { "mod": "herdr-linear" } } ] }
-```
-
-A cloned layout no longer gets Herdr's updates to `main`. To stay on `main`,
-open the mod as a small kept window instead, which floats over the layout:
-`herdr-app do mod.open --name herdr-linear`.
+`herdr-linear` is a clone of `main` and no longer gets Herdr's updates to
+`main`. To stay on `main`, open the title mod as a small kept window instead,
+which floats over the layout: `herdr-app do mod.open --name herdr-linear`.
+The Linear panel needs the `herdr-linear` layout.
 
 The footer shows the issue of the shown space and follows it when you switch
 spaces. Use the footer or the kept window, not both. When the last result is
@@ -190,8 +184,30 @@ Limits:
 - Spaces on other machines (`hc machine add`) are titled too, but the
   lookup runs on the computer with the app: install and set up the binary
   there. The other machine needs nothing.
-- The mod runs only while the shown layout holds it (the `linear` footer or
-  the kept window).
+- The mod runs only while the shown layout holds it (the `herdr-linear`
+  footer or the kept window).
+
+### Linear panel
+
+The Linear button at the right end of the tab bar opens a panel beside the
+work with your open Linear issues, grouped by state (in progress first, then
+by priority). It loads when the app starts, every 5 minutes, and when you
+click refresh.
+
+- Clicking an issue goes to the space and tab whose branch carries it. Under
+  such an issue you see that space and tab with its agent status.
+- An issue no space works on has **Start**: it opens Herdr's New worktree
+  dialog for the issue's branch, in the repo of the shown space.
+- The state chip on each issue lists its team's states. Pick one to move the
+  issue there. This needs write access: with OAuth, run setup again once to
+  grant the `write` scope; a personal API key needs write access.
+- `⋯` in the panel header runs the title commands: Refresh title, Refresh all,
+  Set up and Log out.
+- When Linear needs a login or a new grant, the panel shows the error with a
+  Set up button.
+
+The panel shows in its space the way Files and Changes do: Herdr remembers per
+space whether it was open.
 
 ## Upgrading from herdr-linear-title
 
@@ -206,8 +222,8 @@ This project was renamed from `herdr-linear-title` (plugin id
 - Rebind `linear-title.*` commands in `~/.config/herdr-app/keys.json` to
   `herdr-linear.*`, and plugin actions in `~/.config/herdr/config.toml` to
   `sungjunyoung.linear.*`.
-- `make install-app` replaces the old app mod. In a cloned layout, change the
-  block to `"mod": "herdr-linear"`.
+- `make install-app` removes the old `linear-title` app mod and sets aside an
+  old `linear` layout clone that shows it (see [Herdr desktop app](#herdr-desktop-app)).
 
 ## Troubleshooting
 
