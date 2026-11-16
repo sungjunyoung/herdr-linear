@@ -196,7 +196,7 @@ func (o *OAuth) Login(ctx context.Context, openBrowser func(authURL string)) err
 		"client_id":             {o.ClientID},
 		"redirect_uri":          {o.RedirectURI()},
 		"response_type":         {"code"},
-		"scope":                 {"read"},
+		"scope":                 {"read,write"},
 		"state":                 {state},
 		"code_challenge":        {base64.RawURLEncoding.EncodeToString(challenge[:])},
 		"code_challenge_method": {"S256"},

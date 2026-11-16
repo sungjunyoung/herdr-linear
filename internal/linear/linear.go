@@ -1,14 +1,16 @@
-// Package linear is a minimal Linear GraphQL client for reading issue titles.
+// Package linear is a minimal Linear GraphQL client.
 package linear
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 )
@@ -25,6 +27,9 @@ var (
 	ErrNotFound = errors.New("issue not found")
 	// ErrUnauthorized means Linear rejected the credentials.
 	ErrUnauthorized = errors.New("linear rejected the credentials")
+	// ErrForbidden means the credentials lack a permission, typically the
+	// write scope.
+	ErrForbidden = errors.New("linear credentials lack permission")
 )
 
 // Authorizer supplies the Authorization header value for each request.
@@ -36,6 +41,36 @@ type Authorizer interface {
 type Issue struct {
 	Identifier string `json:"identifier"`
 	Title      string `json:"title"`
+}
+
+// StateRef identifies a workflow state.
+type StateRef struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+// State is a team workflow state with its board position.
+type State struct {
+	StateRef
+	Position float64 `json:"position"`
+}
+
+// AssignedIssue is an issue assigned to the viewer.
+type AssignedIssue struct {
+	Identifier string   `json:"identifier"`
+	Title      string   `json:"title"`
+	URL        string   `json:"url"`
+	BranchName string   `json:"branchName"`
+	Priority   int      `json:"priority"`
+	State      StateRef `json:"state"`
+	Team       string   `json:"team"`
+}
+
+// UpdatedIssue is an issue after a state change.
+type UpdatedIssue struct {
+	Identifier string   `json:"identifier"`
+	State      StateRef `json:"state"`
 }
 
 // Client calls the Linear GraphQL API.
@@ -109,6 +144,96 @@ func (c *Client) IssuesByNumber(ctx context.Context, teamKey string, numbers []i
 	return issues, nil
 }
 
+// MyIssues returns the viewer's open (not completed or canceled) issues in
+// the given teams.
+func (c *Client) MyIssues(ctx context.Context, teamKeys []string) ([]AssignedIssue, error) {
+	// ponytail: first 250 without pagination; paginate if someone holds more open issues.
+	const query = `query($keys: [String!]) {
+  viewer {
+    assignedIssues(first: 250, filter: { state: { type: { nin: ["completed", "canceled"] } }, team: { key: { in: $keys } } }) {
+      nodes { identifier title url branchName priority state { id name type } team { key } }
+    }
+  }
+}`
+	var out struct {
+		Viewer struct {
+			AssignedIssues struct {
+				Nodes []struct {
+					AssignedIssue
+					Team struct {
+						Key string `json:"key"`
+					} `json:"team"`
+				} `json:"nodes"`
+			} `json:"assignedIssues"`
+		} `json:"viewer"`
+	}
+	if err := c.do(ctx, query, map[string]any{"keys": teamKeys}, &out); err != nil {
+		return nil, err
+	}
+	issues := make([]AssignedIssue, 0, len(out.Viewer.AssignedIssues.Nodes))
+	for _, n := range out.Viewer.AssignedIssues.Nodes {
+		is := n.AssignedIssue
+		is.Team = n.Team.Key
+		issues = append(issues, is)
+	}
+	return issues, nil
+}
+
+// WorkflowStates returns every workflow state of the given teams, keyed by
+// team key and sorted by position.
+func (c *Client) WorkflowStates(ctx context.Context, teamKeys []string) (map[string][]State, error) {
+	// ponytail: first 250 without pagination; teams have a handful of states.
+	const query = `query($keys: [String!]) {
+  workflowStates(first: 250, filter: { team: { key: { in: $keys } } }) {
+    nodes { id name type position team { key } }
+  }
+}`
+	var out struct {
+		WorkflowStates struct {
+			Nodes []struct {
+				State
+				Team struct {
+					Key string `json:"key"`
+				} `json:"team"`
+			} `json:"nodes"`
+		} `json:"workflowStates"`
+	}
+	if err := c.do(ctx, query, map[string]any{"keys": teamKeys}, &out); err != nil {
+		return nil, err
+	}
+	states := make(map[string][]State)
+	for _, n := range out.WorkflowStates.Nodes {
+		states[n.Team.Key] = append(states[n.Team.Key], n.State)
+	}
+	for _, s := range states {
+		slices.SortStableFunc(s, func(a, b State) int { return cmp.Compare(a.Position, b.Position) })
+	}
+	return states, nil
+}
+
+// SetIssueState moves the issue to the workflow state stateID.
+func (c *Client) SetIssueState(ctx context.Context, identifier, stateID string) (UpdatedIssue, error) {
+	const query = `mutation($id: String!, $stateId: String!) {
+  issueUpdate(id: $id, input: { stateId: $stateId }) {
+    success
+    issue { identifier state { id name type } }
+  }
+}`
+	var out struct {
+		IssueUpdate struct {
+			Success bool         `json:"success"`
+			Issue   UpdatedIssue `json:"issue"`
+		} `json:"issueUpdate"`
+	}
+	if err := c.do(ctx, query, map[string]any{"id": identifier, "stateId": stateID}, &out); err != nil {
+		return UpdatedIssue{}, fmt.Errorf("%s: %w", identifier, err)
+	}
+	if !out.IssueUpdate.Success {
+		return UpdatedIssue{}, fmt.Errorf("%s: linear did not update the issue", identifier)
+	}
+	return out.IssueUpdate.Issue, nil
+}
+
 type gqlError struct {
 	Message    string `json:"message"`
 	Extensions struct {
@@ -171,6 +296,8 @@ func classify(status int, errs []gqlError) error {
 		switch {
 		case e.Extensions.Code == "AUTHENTICATION_ERROR":
 			return fmt.Errorf("%w: %s", ErrUnauthorized, e.Message)
+		case e.Extensions.Code == "FORBIDDEN" || strings.Contains(strings.ToLower(e.Message), "scope"):
+			return fmt.Errorf("%w: %s", ErrForbidden, e.Message)
 		case e.Extensions.Code == "INPUT_ERROR" && strings.HasPrefix(e.Message, "Entity not found"):
 			return ErrNotFound
 		}

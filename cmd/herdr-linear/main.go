@@ -3,8 +3,9 @@
 //
 // herdr runs it with a subcommand from herdr-plugin.toml and injects the
 // plugin environment (HERDR_BIN_PATH, HERDR_PLUGIN_CONFIG_DIR, ...). The
-// Herdr desktop app's mod runs "resolve" without that environment, so the
-// config and state directories fall back to the ones herdr gives the plugin.
+// Herdr desktop app runs "resolve", "issues" and "set-state" without that
+// environment, so the config and state directories fall back to the ones
+// herdr gives the plugin.
 package main
 
 import (
@@ -30,7 +31,7 @@ import (
 const (
 	notifyTitle     = "Herdr Linear"
 	defaultPluginID = "sungjunyoung.linear"
-	usage           = "usage: herdr-linear hook|refresh|refresh-all|open-setup|setup|logout|resolve <branch>"
+	usage           = "usage: herdr-linear hook|refresh|refresh-all|open-setup|setup|logout|resolve <branch>|issues|set-state <identifier> <stateId>"
 )
 
 func main() {
@@ -50,6 +51,13 @@ func run(ctx context.Context, args []string) error {
 			return err
 		}
 		return a.resolve(ctx, os.Stdout, args[1])
+	}
+	if len(args) == 3 && args[0] == "set-state" {
+		a, err := newApp(os.Stderr)
+		if err != nil {
+			return err
+		}
+		return a.setState(ctx, os.Stdout, args[1], args[2])
 	}
 	if len(args) != 1 {
 		return errors.New(usage)
@@ -77,6 +85,8 @@ func run(ctx context.Context, args []string) error {
 		return a.setup(ctx, os.Stdin, os.Stdout)
 	case "logout":
 		return a.reportErr(ctx, a.logout(ctx))
+	case "issues":
+		return a.issues(ctx, os.Stdout)
 	default:
 		return fmt.Errorf("unknown subcommand %q; %s", args[0], usage)
 	}
@@ -186,7 +196,7 @@ func (a *app) reportErr(ctx context.Context, err error) error {
 
 // needsSetup reports whether err is fixed by running setup again.
 func needsSetup(err error) bool {
-	return errors.Is(err, config.ErrNotConfigured) || errors.Is(err, auth.ErrNotLoggedIn) || errors.Is(err, linear.ErrUnauthorized)
+	return errors.Is(err, config.ErrNotConfigured) || errors.Is(err, auth.ErrNotLoggedIn) || errors.Is(err, linear.ErrUnauthorized) || errors.Is(err, linear.ErrForbidden)
 }
 
 func userMessage(err error) string {
@@ -198,6 +208,8 @@ func userMessage(err error) string {
 		return "Not logged in to Linear." + setupHint
 	case errors.Is(err, linear.ErrUnauthorized):
 		return "Linear rejected the credentials." + setupHint
+	case errors.Is(err, linear.ErrForbidden):
+		return "The Linear credentials lack write access. Logging in with OAuth again grants it; a personal API key needs write access." + setupHint
 	default:
 		return err.Error()
 	}
