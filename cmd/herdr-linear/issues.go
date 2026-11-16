@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"strings"
 
 	"github.com/sungjunyoung/herdr-linear/internal/linear"
 )
@@ -45,7 +46,13 @@ func (a *app) issues(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return emit(out, failed(err))
 	}
-	return emit(out, listIssues(ctx, rt.linear, rt.cfg.TeamKeys))
+	// Linear's key filter is case-sensitive and a hand-edited config may hold
+	// lowercase keys.
+	keys := make([]string, len(rt.cfg.TeamKeys))
+	for i, k := range rt.cfg.TeamKeys {
+		keys[i] = strings.ToUpper(k)
+	}
+	return emit(out, listIssues(ctx, rt.linear, keys))
 }
 
 func (a *app) setState(ctx context.Context, out io.Writer, identifier, stateID string) error {
