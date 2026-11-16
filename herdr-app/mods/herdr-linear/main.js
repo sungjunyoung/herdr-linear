@@ -1,26 +1,26 @@
 // Renames spaces on a Linear branch to "<ISSUE-ID> <title>", like the herdr
-// TUI plugin, by asking `herdr-linear-title resolve <branch>`.
-// Commands: linear-title.refresh, .refresh-all, .setup, .logout.
+// TUI plugin, by asking `herdr-linear resolve <branch>`.
+// Commands: herdr-linear.refresh, .refresh-all, .setup, .logout.
 
 import { View, div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { exec, focused, home, machines, nextCommand, notify, run, setShared, shared, spaces, theme } from "herdr";
 import { AUTO, FORCE, afterResolve, decide, due, footerText, parseResolve, withOwned } from "./policy.js";
 
-const OWNED = "linear-title.owned";
-const TITLE = "Linear Title";
+const OWNED = "herdr-linear.owned";
+const TITLE = "Herdr Linear";
 // The footer block hugs its text: the layout node with this id is resized to
 // the measured text plus padding, up to MAX_WIDTH, past which the text truncates.
-const BLOCK = "linear-title";
+const BLOCK = "herdr-linear";
 const PAD = 14;
 const MAX_WIDTH = 420;
 const SKIPPED = {
   no_branch: "This space has no git branch.",
 };
 
-export default class LinearTitle extends View {
+export default class HerdrLinear extends View {
   init(_props, cx) {
-    this.bin = `${home()}/.local/bin/herdr-linear-title`;
+    this.bin = `${home()}/.local/bin/herdr-linear`;
     this.jobs = new Map();
     this.notified = new Set();
     this.busy = false;
@@ -38,7 +38,7 @@ export default class LinearTitle extends View {
   }
 
   owned() {
-    return shared(OWNED) ?? {};
+    return shared(OWNED) ?? shared("linear-title.owned") ?? {};
   }
 
   // A machine whose layout is not ready cannot take a rename; its spaces wait
@@ -113,7 +113,7 @@ export default class LinearTitle extends View {
           title: TITLE,
           body: out.message,
           level: "error",
-          ...(this.status.setup ? { action: { name: "linear-title.setup" } } : {}),
+          ...(this.status.setup ? { action: { name: "herdr-linear.setup" } } : {}),
         });
       }
       return;
@@ -191,7 +191,7 @@ export default class LinearTitle extends View {
     const s = this.status;
     const text = footerText(s, spaces().find((x) => x.active), this.owned());
     return h_flex()
-      .id("linear-title")
+      .id("herdr-linear")
       .size_full()
       .px(PAD)
       .items_center()
@@ -204,7 +204,7 @@ export default class LinearTitle extends View {
       .when(s.setup, (el) => el.cursor_pointer().hover((st) => st.text_color(t.foreground)).on_click(() => this.setup()))
       .child(
         div()
-          .id("linear-title-text")
+          .id("herdr-linear-text")
           .flex_none()
           .max_w(MAX_WIDTH - PAD * 2)
           .truncate()

@@ -1,7 +1,7 @@
 # Run targets inside the flake dev shell (direnv `use flake`, or
 # `nix develop -c make <target>`), which provides go, golangci-lint and make.
 
-BIN := bin/herdr-linear-title
+BIN := bin/herdr-linear
 NIX := nix --extra-experimental-features 'nix-command flakes'
 
 .PHONY: build test lint fmt link install-app clean
@@ -14,11 +14,11 @@ NIX := nix --extra-experimental-features 'nix-command flakes'
 build:
 	@out=$$($(NIX) build .#default --no-link --print-out-paths) && \
 		mkdir -p bin && \
-		install -m 0755 "$$out/bin/herdr-linear-title" $(BIN)
+		install -m 0755 "$$out/bin/herdr-linear" $(BIN)
 
 test:
 	go test -race ./...
-	node --test herdr-app/mods/linear-title/policy.test.mjs
+	node --test herdr-app/mods/*/policy.test.mjs
 
 lint:
 	golangci-lint run ./...
@@ -31,16 +31,36 @@ fmt:
 link: build
 	herdr plugin link "$(CURDIR)"
 
-# Installs the binary and copies the mod into the Herdr desktop app; rerun
-# after editing the mod. Open it once with `herdr-app do mod.open --name
-# linear-title` (see README).
-APP_MOD := $(HOME)/.config/herdr-app/mods/linear-title
+# Installs the binary, the mods and the herdr-linear layout into the Herdr
+# desktop app; rerun after editing a mod.
+# An old `linear` layout clone that still shows the linear-title mod is set
+# aside once the app has switched to herdr-linear, so two mods do not retitle
+# the same spaces; the switch waits a second for the app to read the new file.
+APP := $(HOME)/.config/herdr-app
+APP_MODS := herdr-linear herdr-linear-panel herdr-linear-button
 install-app: build
-	mkdir -p $(HOME)/.local/bin
-	install -m 0755 $(BIN) $(HOME)/.local/bin/herdr-linear-title
-	if [ -L "$(APP_MOD)" ]; then rm "$(APP_MOD)"; fi
-	mkdir -p "$(APP_MOD)"
-	cp herdr-app/mods/linear-title/main.js herdr-app/mods/linear-title/mod.json herdr-app/mods/linear-title/policy.js "$(APP_MOD)/"
+	mkdir -p "$(HOME)/.local/bin"
+	install -m 0755 $(BIN) "$(HOME)/.local/bin/herdr-linear"
+	rm -f "$(HOME)/.local/bin/herdr-linear-title"
+	for m in $(APP_MODS); do \
+		rm -rf "$(APP)/mods/$$m" && mkdir -p "$(APP)/mods/$$m" || exit 1; \
+		for f in "herdr-app/mods/$$m"/*; do \
+			case "$$f" in *.test.mjs) ;; *) cp "$$f" "$(APP)/mods/$$m/" || exit 1 ;; esac; \
+		done; \
+	done
+	rm -rf "$(APP)/mods/linear-title"
+	mkdir -p "$(APP)/layouts"
+	cp herdr-app/layouts/herdr-linear.json "$(APP)/layouts/herdr-linear.json"
+	old="$(APP)/layouts/linear.json"; \
+	if [ -f "$$old" ] && grep -q linear-title "$$old"; then \
+		sleep 1; \
+		if herdr-app do layout.switch '{"name":"herdr-linear"}' >/dev/null; then \
+			mv "$$old" "$$old.bak-$$(date +%Y%m%d%H%M%S)"; \
+		else \
+			echo "Could not switch the Herdr app to herdr-linear (is it running?)."; \
+			echo "Switch with ctrl-shift-l, then remove $$old."; \
+		fi; \
+	fi
 
 clean:
 	rm -rf bin result

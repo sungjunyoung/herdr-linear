@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/sungjunyoung/herdr-linear-title/internal/branch"
-	"github.com/sungjunyoung/herdr-linear-title/internal/herdr"
-	"github.com/sungjunyoung/herdr-linear-title/internal/linear"
-	"github.com/sungjunyoung/herdr-linear-title/internal/retitle"
+	"github.com/sungjunyoung/herdr-linear/internal/branch"
+	"github.com/sungjunyoung/herdr-linear/internal/herdr"
+	"github.com/sungjunyoung/herdr-linear/internal/linear"
+	"github.com/sungjunyoung/herdr-linear/internal/retitle"
 )
 
 // worktreeEvent is HERDR_PLUGIN_EVENT_JSON for worktree.created and

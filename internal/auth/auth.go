@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sungjunyoung/herdr-linear-title/internal/fileutil"
+	"github.com/sungjunyoung/herdr-linear/internal/fileutil"
 )
 
 // Linear OAuth endpoints.
@@ -178,10 +178,10 @@ func (o *OAuth) Login(ctx context.Context, openBrowser func(authURL string)) err
 			}
 			if cb.err != nil {
 				w.WriteHeader(http.StatusBadRequest)
-				_, _ = fmt.Fprintf(w, "Linear Title: login failed: %v\n", cb.err)
+				_, _ = fmt.Fprintf(w, "Herdr Linear: login failed: %v\n", cb.err)
 				return
 			}
-			_, _ = io.WriteString(w, "Linear Title: authorization received. You can close this tab.\n")
+			_, _ = io.WriteString(w, "Herdr Linear: authorization received. You can close this tab.\n")
 		}),
 	}
 	go func() { _ = srv.Serve(ln) }()
@@ -196,7 +196,7 @@ func (o *OAuth) Login(ctx context.Context, openBrowser func(authURL string)) err
 		"client_id":             {o.ClientID},
 		"redirect_uri":          {o.RedirectURI()},
 		"response_type":         {"code"},
-		"scope":                 {"read"},
+		"scope":                 {"read,write"},
 		"state":                 {state},
 		"code_challenge":        {base64.RawURLEncoding.EncodeToString(challenge[:])},
 		"code_challenge_method": {"S256"},

@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sungjunyoung/herdr-linear-title/internal/branch"
-	"github.com/sungjunyoung/herdr-linear-title/internal/retitle"
+	"github.com/sungjunyoung/herdr-linear/internal/branch"
+	"github.com/sungjunyoung/herdr-linear/internal/retitle"
 )
 
 // resolution is the one JSON object "resolve" prints. The Herdr desktop mod
-// (herdr-app/mods/linear-title) depends on these fields.
+// (herdr-app/mods/herdr-linear) depends on these fields.
 type resolution struct {
 	Status     string `json:"status"` // "ok", "no_ref" or "error"
 	Identifier string `json:"identifier,omitempty"`

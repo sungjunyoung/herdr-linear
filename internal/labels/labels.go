@@ -14,7 +14,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/sungjunyoung/herdr-linear-title/internal/fileutil"
+	"github.com/sungjunyoung/herdr-linear/internal/fileutil"
 )
 
 const (

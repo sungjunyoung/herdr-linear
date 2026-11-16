@@ -174,7 +174,7 @@ func approve(t *testing.T, o *OAuth, ts *tokenServer, mutate func(url.Values)) f
 			return
 		}
 		q := u.Query()
-		if q.Get("code_challenge_method") != "S256" || q.Get("redirect_uri") != o.RedirectURI() || q.Get("scope") != "read" {
+		if q.Get("code_challenge_method") != "S256" || q.Get("redirect_uri") != o.RedirectURI() || q.Get("scope") != "read,write" {
 			t.Errorf("authorize query = %v", q)
 		}
 		ts.mu.Lock()

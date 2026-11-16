@@ -1,10 +1,11 @@
-// Command herdr-linear-title is a herdr plugin that renames worktree
+// Command herdr-linear is a herdr plugin that renames worktree
 // workspaces to "<ISSUE-ID> <Linear issue title>".
 //
 // herdr runs it with a subcommand from herdr-plugin.toml and injects the
 // plugin environment (HERDR_BIN_PATH, HERDR_PLUGIN_CONFIG_DIR, ...). The
-// Herdr desktop app's mod runs "resolve" without that environment, so the
-// config and state directories fall back to the ones herdr gives the plugin.
+// Herdr desktop app runs "resolve", "issues" and "set-state" without that
+// environment, so the config and state directories fall back to the ones
+// herdr gives the plugin.
 package main
 
 import (
@@ -18,19 +19,19 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/sungjunyoung/herdr-linear-title/internal/auth"
-	"github.com/sungjunyoung/herdr-linear-title/internal/branch"
-	"github.com/sungjunyoung/herdr-linear-title/internal/config"
-	"github.com/sungjunyoung/herdr-linear-title/internal/herdr"
-	"github.com/sungjunyoung/herdr-linear-title/internal/labels"
-	"github.com/sungjunyoung/herdr-linear-title/internal/linear"
-	"github.com/sungjunyoung/herdr-linear-title/internal/retitle"
+	"github.com/sungjunyoung/herdr-linear/internal/auth"
+	"github.com/sungjunyoung/herdr-linear/internal/branch"
+	"github.com/sungjunyoung/herdr-linear/internal/config"
+	"github.com/sungjunyoung/herdr-linear/internal/herdr"
+	"github.com/sungjunyoung/herdr-linear/internal/labels"
+	"github.com/sungjunyoung/herdr-linear/internal/linear"
+	"github.com/sungjunyoung/herdr-linear/internal/retitle"
 )
 
 const (
-	notifyTitle     = "Linear Title"
-	defaultPluginID = "sungjunyoung.linear-title"
-	usage           = "usage: herdr-linear-title hook|refresh|refresh-all|open-setup|setup|logout|resolve <branch>"
+	notifyTitle     = "Herdr Linear"
+	defaultPluginID = "sungjunyoung.linear"
+	usage           = "usage: herdr-linear hook|refresh|refresh-all|open-setup|setup|logout|resolve <branch>|issues|set-state <identifier> <stateId>"
 )
 
 func main() {
@@ -38,7 +39,7 @@ func main() {
 	err := run(ctx, os.Args[1:])
 	stop()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "herdr-linear-title:", err)
+		fmt.Fprintln(os.Stderr, "herdr-linear:", err)
 		os.Exit(1)
 	}
 }
@@ -50,6 +51,13 @@ func run(ctx context.Context, args []string) error {
 			return err
 		}
 		return a.resolve(ctx, os.Stdout, args[1])
+	}
+	if len(args) == 3 && args[0] == "set-state" {
+		a, err := newApp(os.Stderr)
+		if err != nil {
+			return err
+		}
+		return a.setState(ctx, os.Stdout, args[1], args[2])
 	}
 	if len(args) != 1 {
 		return errors.New(usage)
@@ -77,6 +85,8 @@ func run(ctx context.Context, args []string) error {
 		return a.setup(ctx, os.Stdin, os.Stdout)
 	case "logout":
 		return a.reportErr(ctx, a.logout(ctx))
+	case "issues":
+		return a.issues(ctx, os.Stdout)
 	default:
 		return fmt.Errorf("unknown subcommand %q; %s", args[0], usage)
 	}
@@ -116,6 +126,9 @@ func newApp(log io.Writer) (*app, error) {
 			base := cmp.Or(os.Getenv("XDG_STATE_HOME"), filepath.Join(home, ".local", "state"))
 			a.stateDir = filepath.Join(base, "herdr", "plugins", a.pluginID)
 		}
+	}
+	if err := migrateLegacy(a.configDir, a.stateDir); err != nil {
+		fmt.Fprintln(a.log, "migrating legacy plugin data:", err)
 	}
 	return a, nil
 }
@@ -183,11 +196,11 @@ func (a *app) reportErr(ctx context.Context, err error) error {
 
 // needsSetup reports whether err is fixed by running setup again.
 func needsSetup(err error) bool {
-	return errors.Is(err, config.ErrNotConfigured) || errors.Is(err, auth.ErrNotLoggedIn) || errors.Is(err, linear.ErrUnauthorized)
+	return errors.Is(err, config.ErrNotConfigured) || errors.Is(err, auth.ErrNotLoggedIn) || errors.Is(err, linear.ErrUnauthorized) || errors.Is(err, linear.ErrForbidden)
 }
 
 func userMessage(err error) string {
-	const setupHint = " Run setup (\"Linear: setup / login\" in herdr, or herdr-linear-title setup)."
+	const setupHint = " Run setup (\"Linear: setup / login\" in herdr, or herdr-linear setup)."
 	switch {
 	case errors.Is(err, config.ErrNotConfigured):
 		return "Not configured." + setupHint
@@ -195,6 +208,8 @@ func userMessage(err error) string {
 		return "Not logged in to Linear." + setupHint
 	case errors.Is(err, linear.ErrUnauthorized):
 		return "Linear rejected the credentials." + setupHint
+	case errors.Is(err, linear.ErrForbidden):
+		return "The Linear credentials lack write access. Logging in with OAuth again grants it; a personal API key needs write access." + setupHint
 	default:
 		return err.Error()
 	}

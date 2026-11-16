@@ -13,7 +13,7 @@ import (
 
 	"github.com/pelletier/go-toml/v2"
 
-	"github.com/sungjunyoung/herdr-linear-title/internal/fileutil"
+	"github.com/sungjunyoung/herdr-linear/internal/fileutil"
 )
 
 const (
@@ -35,7 +35,7 @@ const (
 )
 
 // ErrNotConfigured is returned by Load when no config file exists.
-var ErrNotConfigured = errors.New("linear title is not configured")
+var ErrNotConfigured = errors.New("herdr-linear is not configured")
 
 var teamKeyPattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*$`)
 

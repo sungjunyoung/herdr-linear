@@ -1,4 +1,4 @@
-// Pure decisions for the linear-title mod. main.js owns every side effect.
+// Pure decisions for the herdr-linear mod. main.js owns every side effect.
 
 export const AUTO = "auto";
 export const FORCE = "force";
@@ -29,7 +29,7 @@ export function afterResolve(space, res, owned, mode) {
   return { kind: "rename", label: res.label };
 }
 
-// `herdr-linear-title resolve` prints one JSON object and exits 1 on error,
+// `herdr-linear resolve` prints one JSON object and exits 1 on error,
 // so stdout is read whatever the exit code.
 export function parseResolve({ code, stdout, stderr }) {
   try {

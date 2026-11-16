@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/sungjunyoung/herdr-linear-title/internal/branch"
-	"github.com/sungjunyoung/herdr-linear-title/internal/config"
-	"github.com/sungjunyoung/herdr-linear-title/internal/linear"
+	"github.com/sungjunyoung/herdr-linear/internal/branch"
+	"github.com/sungjunyoung/herdr-linear/internal/config"
+	"github.com/sungjunyoung/herdr-linear/internal/linear"
 )
 
 func TestResolveBranch(t *testing.T) {
