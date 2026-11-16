@@ -196,8 +196,7 @@ and when you click refresh.
 
 - Clicking an issue goes to the space and tab whose branch carries it. Under
   such an issue you see that space and tab with its agent status.
-- An issue no space works on has **Start**: it opens Herdr's New worktree
-  dialog for the issue's branch, in the repo of the shown space.
+- Clicking an issue no space works on opens it in Linear.
 - The state chip on each issue lists its team's states. Pick one to move the
   issue there. This needs write access: with OAuth, run setup again once to
   grant the `write` scope; a personal API key needs write access.

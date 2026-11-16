@@ -3,7 +3,7 @@
 
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { checking, exec, home, openOverlay, panes, run, spaces, theme } from "herdr";
+import { checking, exec, home, panes, run, spaces, theme } from "herdr";
 import { INITIAL, groupIssues, linkOf, parseResult, step } from "./policy.js";
 
 const PRIORITY = { 1: ["Urgent", "blocked"], 2: ["High", "working"] };
@@ -71,7 +71,6 @@ export default class LinearPanel extends View {
     const t = theme();
     const s = this.s;
     const allPanes = panes(), allSpaces = spaces();
-    const shown = allSpaces.find((x) => x.active);
     const groups = groupIssues(s.issues);
     const stop = (_e, cx) => cx.stop_propagation();
 
@@ -115,8 +114,6 @@ export default class LinearPanel extends View {
           .child(div().flex_1().min_w(0).truncate().font_medium().child(i.title))
           .when(Boolean(pri), (el) => el.child(div().flex_none().text_size(11).text_color(t[pri[1]]).child(pri[0])))
           .child(chip(i))
-          .when(!l, (el) => el.child(button(`start-${i.identifier}`, "Start", true, () =>
-            openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { branch: i.branchName, space: shown?.id } }))))
           .when(Boolean(l), (el) => el.child(button(`open-${i.identifier}`, "Linear", false, () => exec("open", [i.url])))))
         .when(Boolean(l), (el) => el.child(h_flex().gap(8).items_center().text_size(11.5).text_color(t.muted)
           .child(dot(l.tab.status))
