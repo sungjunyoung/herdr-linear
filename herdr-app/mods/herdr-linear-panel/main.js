@@ -3,8 +3,8 @@
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { checking, exec, home, panes, run, spaces, theme } from "herdr";
-import { INITIAL, groupIssues, linkOf, parseResult, shortDate, statusIcon, step } from "./policy.js";
+import { checking, exec, focused, home, panes, run, spaces, theme } from "herdr";
+import { INITIAL, groupIssues, linkOf, parseResult, shortDate, statusIcon, step, tint } from "./policy.js";
 
 // Linear's priority glyph: how many of the three bars are lit.
 const BARS = { 2: 3, 3: 2, 4: 1 };
@@ -79,6 +79,9 @@ export default class LinearPanel extends View {
     const t = theme();
     const s = this.s;
     const allPanes = panes(), allSpaces = spaces();
+    // Panes in the focused space; an issue open in several spaces lights up in each.
+    const hereTabs = new Set(allSpaces.find((x) => x.id === focused()?.space)?.tabs.map((x) => x.id));
+    const herePanes = allPanes.filter((p) => hereTabs.has(p.tab));
     const groups = groupIssues(s.issues, s.states);
     const stop = (_e, cx) => cx.stop_propagation();
     const press = (el, action) => el.on_mouse_down("left", stop).on_click((_e, cx) => { cx.stop_propagation(); action(cx); });
@@ -117,8 +120,13 @@ export default class LinearPanel extends View {
       const l = linkOf(i, allPanes, allSpaces);
       const go = () => l ? (run("space.select", { id: l.space.id }), run("tab.select", { id: l.tab.id })) : exec("open", [i.url]);
       const pending = s.pending === i.identifier;
+      // The focused space's issue: a faint wash and edge in its state's color.
+      const on = Boolean(linkOf(i, herePanes, allSpaces));
+      const c = i.state.color || t.muted;
       return [
-        h_flex().id(`issue-${i.identifier}`).h(36).px(12).gap(9).items_center().hover((st) => st.bg(t.hover)).on_click(() => go())
+        h_flex().id(`issue-${i.identifier}`).h(36).pl(10).pr(12).gap(9).items_center().border_l(2)
+          .border_color(on ? tint(c, 0.7) : "#00000000").when(on, (el) => el.bg(tint(c, 0.08)))
+          .hover((st) => st.bg(t.hover)).on_click(() => go())
           .child(priority(i.priority))
           .child(div().flex_none().min_w(86).text_size(12).text_color(t.dim).child(i.identifier))
           .child(press(div().id(`state-${i.identifier}`).flex_none().p(2).rounded(4).hover((st) => st.bg(t.selected)),

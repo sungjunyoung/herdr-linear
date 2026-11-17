@@ -90,3 +90,9 @@ export function shortDate(iso) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "" : `${MONTHS[d.getMonth()]} ${d.getDate()}`;
 }
+
+// "#rrggbb" at the given opacity as "#rrggbbaa"; other forms pass through.
+export function tint(color, alpha) {
+  if (!/^#[0-9a-f]{6}$/i.test(color)) return color;
+  return color + Math.round(alpha * 255).toString(16).padStart(2, "0");
+}
