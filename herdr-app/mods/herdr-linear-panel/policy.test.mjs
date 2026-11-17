@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { INITIAL, groupIssues, linkOf, parseResult, shortDate, statusIcon, step } from "./policy.js";
+import { INITIAL, groupIssues, linkOf, parseResult, shortDate, statusIcon, step, tint } from "./policy.js";
 
 const issue = (identifier, type, priority, name = type) => ({
   identifier,
@@ -101,4 +101,10 @@ test("groupIssues puts the later started state first", () => {
   const states = { HOMECO: [{ ...prog, position: 2 }, { ...rev, position: 1002 }] };
   const groups = groupIssues([{ identifier: "A", priority: 0, state: prog }, { identifier: "B", priority: 0, state: rev }], states);
   assert.deepEqual(groups.map((g) => g.name), ["In Review", "In Progress"]);
+});
+
+test("tint adds alpha to #rrggbb only", () => {
+  assert.equal(tint("#f2c94c", 0.08), "#f2c94c14");
+  assert.equal(tint("#F2C94C", 1), "#F2C94Cff");
+  assert.equal(tint("#abc", 0.5), "#abc");
 });
